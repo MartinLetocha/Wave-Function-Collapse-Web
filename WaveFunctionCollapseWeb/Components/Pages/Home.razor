@@ -1,0 +1,60 @@
+﻿@page "/"
+@using WaveFunctionCollapseWeb.Components.Display
+@rendermode InteractiveServer
+<PageTitle>Wave function collapse</PageTitle>
+
+<div class="home">
+    <div>
+        <TileMap displayWidth="50" displayHeight="50" isInput="true" @bind-Sensitivity="sensitivity"></TileMap>
+        <div>
+            <div>Settings:</div>
+            <div class="templates">Templates:
+                <select class="form-select select-width">
+                    <option>None</option>
+                    <option>City</option>
+                    <option>Forest</option>
+                    <option>Plains</option>
+                </select>
+            </div>
+            <div class="form-check form-switch nopad">Use Input
+                <input class="form-check-input nofloat" type="checkbox" checked>
+                <span class="main-text">(?)</span>
+                <div class="settingexplain">This decides whether to use input or not.</div>
+            </div>
+            <div>Tile instructions:
+                <input type="radio" class="btn-check" name="instruct" id="instruct1" autocomplete="off" checked>
+                <label class="btn btn-secondary" for="instruct1">Directional algorithm</label>
+                <input type="radio" class="btn-check" name="instruct" id="instruct2" autocomplete="off">
+                <label class="btn btn-secondary" for="instruct2">Tile by tile</label>
+            </div>
+            <div class="form-check form-switch nopad">Biomes <input class="form-check-input nofloat" type="checkbox">
+                <span class="main-text">(?)</span>
+                <div class="settingexplain">This enables generation according to 'biomes'.</div>
+            </div>
+            <div>Collapse: 
+                <input type="radio" class="btn-check" name="collapse" id="collapse1" autocomplete="off" checked>
+                <label class="btn btn-secondary" for="collapse1">Random collapse</label>
+                <input type="radio" class="btn-check" name="collapse" id="collapse2" autocomplete="off">
+                <label class="btn btn-secondary" for="collapse2">Sequential collapse</label>
+            </div>
+            <div>Tile limit at once: <input type="number" @bind="tileLimit" step="1"/> <span class="main-text">(?)</span>
+                <div class="settingexplain">This says how big is the maximum zoom out -> how many tiles can be shown at once.</div>
+            </div>
+            <div>
+                Drag sensitivity: <input type="number" @bind="sensitivity" step=".1"/> <span class="main-text">(?)</span>
+                <div class="settingexplain">This makes the drag sensitivity different.</div>
+            </div>
+            <div><button class="btn btn-dark">Regenerate</button><span class="main-text">(?)</span>
+                <div class="settingexplain">This creates the map anew.</div>
+            </div>
+        </div>
+    </div>
+    <div>
+        <TileMap displayWidth="80" displayHeight="80" @bind-Sensitivity="sensitivity"></TileMap>
+    </div>
+</div>
+
+@code {
+    private double sensitivity = 6.4;
+    private int tileLimit = 20;
+}

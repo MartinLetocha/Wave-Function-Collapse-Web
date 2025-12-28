@@ -1,0 +1,238 @@
+@page "/tilegrid"
+@using System.Globalization
+@using WaveFunctionCollapseWeb.Data
+@using WaveFunctionCollapseWeb.Models
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+
+<div class="wrapper"
+     id = "tileMap"
+     @ref = "tileRef"
+     @onwheel="OnWheel"
+     @onmousedown="OnMouseDown"
+     @onmouseup="OnMouseUp"
+     @onmousemove="OnMouseMove"
+     @onmouseleave = "OnMouseLeave"
+     oncontextmenu="return false;"
+     @onwheel:preventDefault="true"
+     style="width: @(displayWidth)vh; height: @(displayHeight)vh">
+
+    <div class="canvas">
+
+        <div class="grid"
+             style="grid-template-columns: repeat(@Height, @(ColumnSize)vh); grid-template-rows: repeat(@Width, @(RowSize)vh)">
+            @for (int y = 0 + offsetY; y < Width + offsetY; y++)
+            {
+                for (int x = 0 + offsetX; x < Height + offsetX; x++)
+                {
+                    if (viewTiles.TryGetValue((x, y), out var id))
+                    {
+                        Tile tile = DataManager.GetTileFromDb(id);
+                        <div class="cell" style="background: @tile.Background">@(tile.Text)</div>
+                    }
+                    else
+                    {
+                        <div class="cell">?</div>
+                    }
+                }
+            }
+        </div>
+
+    </div>
+
+</div>
+
+<div class="zoom-display">@Width x @Height</div>
+
+<script>
+    window.getRelativePos = function (element, clientX, clientY) {
+        const rect = element.getBoundingClientRect();
+        return {
+            x: clientX - rect.left,
+            y: clientY - rect.top
+        };
+    };
+    window.getViewportHeight = () => {
+        return window.innerHeight; 
+    };
+</script>
+
+@code {
+    [Parameter] public int displayWidth { get; set; }
+    [Parameter] public int displayHeight { get; set; }
+    [Parameter] public bool isInput { get; set; }
+    [Parameter] public double Sensitivity { get; set; }
+    [Parameter] public EventCallback<double> SensitivityChanged { get; set; }
+    
+    //what is shown
+    private Dictionary<(int, int), Guid> viewTiles = new();
+    
+    //avoiding multiple generation calls
+    private bool blockGeneration = false;
+
+    string ColumnSize => (displayHeight / (decimal)Height)
+        .ToString(CultureInfo.InvariantCulture);
+
+    string RowSize => (displayWidth / (decimal)Width)
+        .ToString(CultureInfo.InvariantCulture);
+
+    int Width = 10;
+    int Height = 10;
+    
+    //dragging
+    private bool isDragging = false;
+    private Point startDrag;
+    private int offsetX = 0;
+    private int offsetY = 0;
+    private int tempOffsetX = 0;
+    private int tempOffsetY = 0;
+    private bool isRightClick = false;
+    
+    //for JS
+    private ElementReference tileRef;
+
+    protected override void OnInitialized()
+    {
+        if (isInput)
+        {
+            if (DataManager.width != 0)
+            {
+                Width = DataManager.width;
+                Height = DataManager.height;
+            }
+            offsetX = DataManager.offsetX;
+            offsetY = DataManager.offsetY;
+            if (DataManager.viewTiles.Count >= 1)
+            {
+                viewTiles = DataManager.viewTiles;
+                return;
+            }
+            for (int y = 0; y < Height; y++)
+            {
+                for (int x = 0; x < Width; x++)
+                {
+                    //viewTiles.Add((x, y), new Tile() { Y = y, X = x, Text = "⬜" });
+                    Tile insert = new Tile() { Text = $"{x},{y}", Background = "#448", ExceptionType = ExceptionType.Number, Name = "Test - Location"};
+                    var id = DataManager.AddTileToDatabase(insert);
+                    viewTiles.Add((x, y), id);
+                }
+            }
+        }
+        else
+        {
+            if (blockGeneration)
+            {
+                return;
+            }
+            blockGeneration = true;
+            Algorithm.WFCCore.Generate();
+            viewTiles = DataManager.tiles;
+        }
+    }
+    
+    void OnMouseDown(MouseEventArgs e)
+    {
+        if (e.Button == 2)
+        {
+            isRightClick = true;
+        }
+        
+        if (!isInput)
+        {
+            viewTiles = DataManager.tiles;
+        }
+        tempOffsetX = offsetX;
+        tempOffsetY = offsetY;
+        isDragging = true;
+        startDrag = new Point(e.ScreenX, e.ScreenY);
+    }
+    
+    // to solve mouse out of bounds dragging continuation
+    void OnMouseLeave()
+    {
+        isDragging = false;
+    }
+    
+    
+    async Task OnMouseUp(MouseEventArgs e)
+    {
+        isDragging = false;
+        if (isRightClick)
+        {
+            isRightClick = false;
+            return;
+        }
+        if(tempOffsetX == offsetX && tempOffsetY == offsetY)
+        {
+            if (!isInput)
+                return;
+            await Paint(e.ClientX, e.ClientY, DataManager.paintingTile.Background, DataManager.paintingTile.Text);
+        }
+
+        DataManager.offsetX = offsetX;
+        DataManager.offsetY = offsetY;
+    }
+    
+    async Task OnMouseMove(MouseEventArgs e)
+    {
+        if (isRightClick)
+        {
+            await Paint(e.ClientX, e.ClientY, DataManager.paintingTile.Background, DataManager.paintingTile.Text);
+            return;
+        }
+        if (isDragging)
+        {
+            double xDifference = e.ScreenX - startDrag.X;
+            double yDifference = e.ScreenY - startDrag.Y;
+            if (xDifference >= (double)displayWidth / Width * Sensitivity || xDifference <= -((double)displayWidth / Width * Sensitivity ))
+            {
+                startDrag.X = e.ScreenX;
+                offsetX += 1 * (-Math.Sign(xDifference));
+            }
+            if (yDifference >= (double)displayHeight / Height * Sensitivity || yDifference <= -((double)displayHeight / Height * Sensitivity) )
+            {
+                startDrag.Y = e.ScreenY;
+                offsetY += 1 * (-Math.Sign(yDifference));
+            }
+        }
+    }
+    
+    void OnWheel(WheelEventArgs e)
+    {
+        if (e.DeltaY > 0)
+        {
+            if (Width >= 20)
+                return;
+            Width++;
+            Height++;
+        }
+        else
+        {
+            if (Width <= 1)
+                return;
+            Width--;
+            Height--;
+        }
+
+        DataManager.width = Width;
+        DataManager.height = Height;
+        DataManager.viewTiles = viewTiles;
+    }
+
+    async Task Paint(double clientX, double clientY, string background, string text)
+    {
+        double viewportHeightPx = await JS.InvokeAsync<double>("getViewportHeight");
+        var pos = await JS.InvokeAsync<Point>("getRelativePos", tileRef, clientX, clientY);
+        double tileSizePx = displayHeight / (double)Height * (viewportHeightPx / 100.0);
+        int x = (int)Math.Floor(pos.X / tileSizePx + offsetX);
+        int y = (int)Math.Floor(pos.Y / tileSizePx + offsetY);
+        Tile insert = new Tile() { Text = text, Background = background};
+        Guid id = DataManager.AddTileToDatabase(insert);
+        if (!viewTiles.TryAdd((x, y), id))
+        {
+            viewTiles[(x, y)] = id;
+        }
+
+        DataManager.viewTiles = viewTiles;
+    }
+}
