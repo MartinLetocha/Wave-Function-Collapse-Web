@@ -4,11 +4,14 @@ namespace WaveFunctionCollapseWeb.Data;
 
 public static class DataManager
 {
+    //meta
+    private static readonly object _lock = new();
     public static int testCounter = 0;
-    public static Tile paintingTile = new Tile() { Text = "", Background = "#42f5a1", Name = "Test - Painting" };
+    //persistent
+    public static Guid selectedTileOverview = Guid.Empty;
+    public static Tile paintingTile = new Tile() { Text = "", Background = "#42f5a1", Name = "Test - Painting", ID = Guid.Empty };
     public static Dictionary<(int, int), Guid> tiles = new();
     public static Dictionary<Guid, Tile> tileDatabase = new();
-    private static readonly object _lock = new();
     //input tileMap
     public static int width = 0;
     public static int height = 0;
@@ -25,6 +28,10 @@ public static class DataManager
 
     public static Tile GetTileFromDb(Guid id)
     {
+        //remove this after
+        if(id == Guid.Empty)
+            return new Tile() { Text = "", Background = "#42f5a1", Name = "Test - Painting", ID = Guid.Empty };
+        //TODO: yea
         lock (_lock)
         {
             return tileDatabase[id];
@@ -35,7 +42,7 @@ public static class DataManager
         lock (_lock)
         {
             var tileInDb = tileDatabase.FirstOrDefault(x =>
-                x.Value.Background == tile.Background && x.Value.Text == tile.Text && tile.Image == x.Value.Image);
+                x.Value.Name == tile.Name);
 
             if (tileInDb.Value != null)
             {

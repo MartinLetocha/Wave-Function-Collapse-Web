@@ -10,12 +10,23 @@
     <div class="border-small add-tile">
         <div class="center-text">Add tile</div>
         <div>Name: <input type="text" @oninput="args => tileName = args.Value.ToString()"/></div>
-        <div>Background color:</div> <ColorPicker InColor="@backgroundColor" ReturnedColor="ColorChange"></ColorPicker>
+        <div>Background color:</div> <ColorPicker InColor="@backgroundColor" ReturnedColor="color => { ColorChange(color, false);}"></ColorPicker>
         <div>Foreground text: <input type="text" @oninput="args => foregroundText = args.Value.ToString()"/></div>
+        <div>Foreground color:</div> <ColorPicker InColor="@foregroundColor" ReturnedColor="color => { ColorChange(color, true);}"></ColorPicker>
         <div>
             Image: <InputFile OnChange="FileSelected"></InputFile>
         </div>
-        <div>Preview: <div class="cell" style="background: @backgroundColor; width: 2rem; height: 2rem">@(foregroundText)</div></div>
+        <div>Preview: 
+            @if (imageBytes == null)
+            {
+                <div class="cell" style="background: @backgroundColor; width: 2rem; height: 2rem; color: @foregroundColor">@(foregroundText)</div>
+            }
+            else
+            {
+                <div class="cell"
+                     style="background-image: url(@($"data:{imageContentType};base64,{Convert.ToBase64String(imageBytes)}")); background-size: 2rem 2rem; width: 2rem; height: 2rem; color: @foregroundColor">@(foregroundText)</div>
+            }
+        </div>
         <button @onclick="AddTile">Add</button>
     </div>
     <div class="display-tiles border-small">
@@ -39,11 +50,22 @@
                 continue;
             }
 
-            <div class="tile-whole @(activeTileId == kvp.Key ? "active-tile" : "")"
-                 @onclick="args => MouseClickTile(args, kvp.Key)">
-                @tile.Name
-                <div class="cell" style="background: @tile.Background; width: 2rem; height: 2rem">@(tile.Text)</div>
-            </div>
+            if (tile.Image.Data == null)
+            {
+                <div class="tile-whole @(activeTileId == kvp.Key ? "active-tile" : "")"
+                     @onclick="args => MouseClickTile(args, kvp.Key)">
+                    @tile.Name
+                    <div class="cell" style="background: @tile.Background; width: 2rem; height: 2rem; color:@tile.TextColor">@(tile.Text)</div>
+                </div>
+            }
+            else
+            {
+                <div class="tile-whole @(activeTileId == kvp.Key ? "active-tile" : "")"
+                     @onclick="args => MouseClickTile(args, kvp.Key)">
+                    @tile.Name
+                    <div class="cell" style="background-image: url(@($"data:{tile.Image.DataType};base64,{Convert.ToBase64String(tile.Image.Data)}")); background-size: 2rem 2rem; width: 2rem; height: 2rem; color:@tile.TextColor">@(tile.Text)</div>
+                </div>
+            }
         }
     </div>
     <div class="center-text border-small">
@@ -52,15 +74,15 @@
             <div class="row-paint">
                 <button @onclick="AssignPaintingTile" class="btn-tile-set">></button>
                 @DataManager.paintingTile.Name
-                @if (DataManager.paintingTile.Image == null)
+                @if (DataManager.paintingTile.Image.Data == null)
                 {
                     <div class="cell"
-                         style="background: @DataManager.paintingTile.Background; width: 2rem; height: 2rem">@(DataManager.paintingTile.Text)</div>
+                         style="background: @DataManager.paintingTile.Background; width: 2rem; height: 2rem; color:@DataManager.paintingTile.TextColor">@(DataManager.paintingTile.Text)</div>
                 }
                 else
                 {
                     <div class="cell"
-                         style="background-image: url(@($"data:{DataManager.paintingTile.Image.DataType};base64,{Convert.ToBase64String(DataManager.paintingTile.Image.Data)}")); background-size: 2rem 2rem; width: 2rem; height: 2rem">@(DataManager.paintingTile.Text)</div>
+                         style="background-image: url(@($"data:{DataManager.paintingTile.Image.DataType};base64,{Convert.ToBase64String(DataManager.paintingTile.Image.Data)}")); background-size: 2rem 2rem; width: 2rem; height: 2rem; color:@DataManager.paintingTile.TextColor">@(DataManager.paintingTile.Text)</div>
                 }
             </div>
         </div>
@@ -72,14 +94,15 @@
     private byte[]? imageBytes = null;
     private string? imageContentType = null;
 
-    private Guid activeTileId = Guid.Empty;
+    private Guid activeTileId = DataManager.selectedTileOverview;
     //add tile
     private string tileName = "";
     private string backgroundColor = "#445";
+    private string foregroundColor = "#ffffff";
     private string foregroundText = "";
     //TODO: TIER 3 - make JSON save and loading
-    //TODO: TIER 2 - add option to use 1,2,3,4,5 as "paint brushes" -> list has a number option
-    //TODO: TIER 1 - Change add tile to edit as well, make 2 as more of a list with names, add tile -> puts it into database -> shows up in list as selected -> option to add as painting tile
+    //TODO: TIER 2 - add option to use 1,2,3,4,5 as "paint brushes" -> list has a number option, show that in 'settings'
+    //TODO: TIER 1 - Change add tile to edit as well, add delete option
 
     private void AssignPaintingTile()
     {
@@ -88,17 +111,27 @@
         {
             DataManager.paintingTile = tile;
         }
-        //TEST: DataManager.paintingTile.Image = new Image() { Data = imageBytes, DataType = imageContentType };
-        //set all other info -> create selected tile according to list
     }
 
-    private void ColorChange(string e)
+    private void ColorChange(string e, bool isFore)
     {
-        backgroundColor = e;
+        if (isFore)
+        {
+            foregroundColor = e;
+        }
+        else
+        {
+            backgroundColor = e;
+        }
     }
     private void AddTile()
     {
-        //upload all the shit in addtiele
+        Tile newTile = new Tile() {Name = tileName, Background = backgroundColor, Text = foregroundText, TextColor = foregroundColor, Image = new Image(){Data = imageBytes, DataType = imageContentType}};
+        Guid id = DataManager.AddTileToDatabase(newTile);
+        activeTileId = id;
+        DataManager.selectedTileOverview = id;
+        imageBytes = null;
+        imageContentType = null;
     }
     private async Task FileSelected(InputFileChangeEventArgs e)
     {
@@ -109,12 +142,12 @@
 
         imageBytes = ms.ToArray();
         imageContentType = file.ContentType;
-        // nothing necessary to do with this, just store it and then create a tile on click
     }
 
     private void MouseClickTile(MouseEventArgs e, Guid id)
     {
         activeTileId = id;
+        DataManager.selectedTileOverview = id;
     }
 
 }
