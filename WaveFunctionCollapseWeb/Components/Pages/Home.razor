@@ -1,59 +1,102 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.Mvc
 @using WaveFunctionCollapseWeb.Components.Display
+@using WaveFunctionCollapseWeb.Data
 @rendermode InteractiveServer
 <PageTitle>Wave function collapse</PageTitle>
 
 <div class="home">
     <div>
-        <TileMap displayWidth="50" displayHeight="50" isInput="true" @bind-Sensitivity="sensitivity"></TileMap>
-        <div>
-            <div>Settings:</div>
-            <div class="templates">Templates:
-                <select class="form-select select-width">
+        <TileMap displayWidth="50" displayHeight="50" @bind-Sensitivity="sensitivity"></TileMap>
+        <div style="width: 50vh">
+            <div class="templates setting">Templates:
+                <select class="">
                     <option>None</option>
                     <option>City</option>
                     <option>Forest</option>
                     <option>Plains</option>
                 </select>
             </div>
-            <div class="form-check form-switch nopad">Use Input
-                <input class="form-check-input nofloat" type="checkbox" checked>
-                <span class="main-text">(?)</span>
-                <div class="settingexplain">This decides whether to use input or not.</div>
+            <div class="palette setting">Palette:
+                @for (var index = 0; index < DataManager.tilePalette.Length; index++)
+                {
+                    var id = DataManager.tilePalette[index];
+                    var tile = DataManager.GetTileFromDb(id);
+                    if (tile.Image.Data == null)
+                    {
+                        <span>@(index + 1)</span>
+                        <div class="cell"
+                             style="background: @tile.Background; color: @tile.TextColor; width: 2rem; height: 2rem">
+                            @tile.Text
+                        </div>
+                    }
+                    else
+                    {
+                        <span>@(index + 1)</span>
+                        <div class="cell"
+                             style="color: @tile.TextColor; width: 2rem; height: 2rem">
+                            <img src="TileImage?id=@tile.ID" loading="lazy"
+                                 decoding="async" width="100%" height="100%"
+                                 draggable="false"
+                                 ondragstart="return false;"/><span>@tile.Text</span>
+                        </div>
+                    }
+                }
             </div>
-            <div>Tile instructions:
-                <input type="radio" class="btn-check" name="instruct" id="instruct1" autocomplete="off" checked>
-                <label class="btn btn-secondary" for="instruct1">Directional algorithm</label>
-                <input type="radio" class="btn-check" name="instruct" id="instruct2" autocomplete="off">
-                <label class="btn btn-secondary" for="instruct2">Tile by tile</label>
+            <div class="setting">Use Input:
+                <span>
+                <input class="" type="checkbox" checked>
+                <span class="tooltipmain">(?)
+                    <div class="tooltiptext">This decides whether to use input or not.</div></span></span>
             </div>
-            <div class="form-check form-switch nopad">Biomes <input class="form-check-input nofloat" type="checkbox">
-                <span class="main-text">(?)</span>
-                <div class="settingexplain">This enables generation according to 'biomes'.</div>
+            <div class="setting">Biomes: <span><input class="" type="checkbox">
+                <span class="tooltipmain">(?)
+                    <div class="tooltiptext">This enables generation according to 'biomes'.</div></span></span>
             </div>
-            <div>Collapse: 
-                <input type="radio" class="btn-check" name="collapse" id="collapse1" autocomplete="off" checked>
-                <label class="btn btn-secondary" for="collapse1">Random collapse</label>
-                <input type="radio" class="btn-check" name="collapse" id="collapse2" autocomplete="off">
-                <label class="btn btn-secondary" for="collapse2">Sequential collapse</label>
+            <div class="setting">Tile instructions:
+                <input type="radio" class="" name="instruct" id="instruct1" autocomplete="off" checked>
+                <label class="" for="instruct1">Directional algorithm</label>
+                <input type="radio" class="" name="instruct" id="instruct2" autocomplete="off">
+                <label class="" for="instruct2">Tile by tile</label>
+                <input type="radio" class="" name="instruct" id="instruct3" autocomplete="off">
+                <label class="" for="instruct3">Weight</label>
             </div>
-            <div>Tile limit at once: <input type="number" @bind="tileLimit" step="1"/> <span class="main-text">(?)</span>
-                <div class="settingexplain">This says how big is the maximum zoom out -> how many tiles can be shown at once.</div>
+            <div class="setting">Collapse:
+                <input type="radio" class="" name="collapse" id="collapse1" autocomplete="off" checked>
+                <label class="" for="collapse1">Random collapse</label>
+                <input type="radio" class="" name="collapse" id="collapse2" autocomplete="off">
+                <label class="" for="collapse2">Sequential collapse</label>
+                <input type="radio" class="" name="collapse" id="collapse3" autocomplete="off">
+                <label class="" for="collapse3">Lowest entropy</label>
+            </div>
+            <div class="setting">Tile limit at once: <span><input type="number" @bind="tileLimit" step="1"/> <span class="tooltipmain">(?)
+                    <div class="tooltiptext">This says how big is the maximum zoom out -> how many tiles can be shown at once.</div></span></span>
+            </div>
+            <div class="setting">
+                Drag sensitivity: <span><input type="number" @bind="sensitivity" step=".1"/> <span class="tooltipmain">(?)
+                    <div class="tooltiptext">This makes the drag sensitivity different.</div></span></span>
+            </div>
+            <div class="setting">
+                Generation speed: <span>Full <input type="checkbox" checked
+                                              id="checkbox_speed"/>
+                <input disabled id="input_speed" type="number" max="400" min="1" value="10" step="1">
+                <span class="tooltipmain">(?)
+                    <div class="tooltiptext">Handles how fast the map generates, the speed is in tiles per second.</div>
+                </span></span>
             </div>
             <div>
-                Drag sensitivity: <input type="number" @bind="sensitivity" step=".1"/> <span class="main-text">(?)</span>
-                <div class="settingexplain">This makes the drag sensitivity different.</div>
-            </div>
-            <div><button class="btn btn-dark">Regenerate</button><span class="main-text">(?)</span>
-                <div class="settingexplain">This creates the map anew.</div>
+                <div class="tooltipmain"><button class="">Regenerate</button><div class="tooltiptext">This creates the map anew.</div></div>
             </div>
         </div>
     </div>
-    <div>
-        <TileMap displayWidth="80" displayHeight="80" @bind-Sensitivity="sensitivity"></TileMap>
-    </div>
+    <TileMapDisplay displayWidth="91" displayHeight="91" @bind-Sensitivity="sensitivity"></TileMapDisplay>
 </div>
+
+<script>
+    document.getElementById('checkbox_speed').onchange = function () {
+        document.getElementById('input_speed').disabled = this.checked;
+    }
+</script>
 
 @code {
     private double sensitivity = 6.4;

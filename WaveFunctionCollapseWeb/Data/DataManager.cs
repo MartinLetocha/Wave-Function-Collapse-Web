@@ -9,6 +9,7 @@ public static class DataManager
     public static int testCounter = 0;
     //persistent
     public static Guid selectedTileOverview = Guid.Empty;
+    public static Guid[] tilePalette = [Guid.Empty, Guid.Empty, Guid.Empty, Guid.Empty, Guid.Empty];
     public static Tile paintingTile = new Tile() { Text = "", Background = "#42f5a1", Name = "Test - Painting", ID = Guid.Empty };
     public static Dictionary<(int, int), Guid> tiles = new();
     public static Dictionary<Guid, Tile> tileDatabase = new();
@@ -18,6 +19,11 @@ public static class DataManager
     public static int offsetX = 0;
     public static int offsetY = 0;
     public static Dictionary<(int, int), Guid> viewTiles = new();
+    //output tileMap
+    public static int widthOutput = 0;
+    public static int heightOutput = 0;
+    public static int offsetXOutput = 0;
+    public static int offsetYOutput = 0;
     public static void AddTile((int, int) index, Guid id)
     {
         lock (_lock)
@@ -37,7 +43,7 @@ public static class DataManager
             return tileDatabase[id];
         }
     }
-    public static Guid AddTileToDatabase(Tile tile)
+    public static Guid AddTileToDatabase(Tile tile, Guid? withId = null)
     {
         lock (_lock)
         {
@@ -49,7 +55,7 @@ public static class DataManager
                 return tileInDb.Key;
             }
 
-            Guid id = Guid.NewGuid();
+            var id = withId == null ? Guid.NewGuid() : withId.Value;
             tile.ID = id;
             tileDatabase.TryAdd(id, tile);
             return id;

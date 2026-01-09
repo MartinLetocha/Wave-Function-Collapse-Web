@@ -32,6 +32,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xEaXNwbGF5XFRpbGVNYXAucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/marti/RiderProjects/WaveFunctionCollapseWeb/WaveFunctionCollapseWeb/Components/Display/TileMapDisplay.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xEaXNwbGF5XFRpbGVNYXBEaXNwbGF5LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/marti/RiderProjects/WaveFunctionCollapseWeb/WaveFunctionCollapseWeb/Components/Pages/Counter.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDb3VudGVyLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 

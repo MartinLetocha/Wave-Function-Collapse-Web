@@ -72,7 +72,15 @@ h1:focus {
 
 /* home */
 
+.setting
+{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .home {
+    font-size: 20px;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -90,6 +98,13 @@ h1:focus {
     height: 90%;
     margin-left: 10px;
     width: 19vw;
+}
+
+.palette {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.4rem;
 }
 
 /* tile overview */
@@ -158,17 +173,33 @@ h1:focus {
 
 /* tooltips */
 
-.main-text:hover + .settingexplain {
-    display: flex;
+/* Tooltip container */
+.tooltipmain {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px dotted black; 
+    cursor: pointer;
 }
-.settingexplain {
-    display: none;
-    border: 2px black solid;
-    justify-content: center;
-    flex-direction: unset;
-    margin: 4px;
-    padding: 2px;
-    color: GrayText;
+
+/* Tooltip text */
+.tooltiptext {
+    visibility: hidden; 
+    width: 200px;
+    background-color: black;
+    color: #ffffff;
+    text-align: center;
+    padding: 5px;
+    border-radius: 6px;
+    position: absolute;
+    z-index: 1;
+    bottom: 100%;
+    left: 100%;
+    margin-left: -100px;
+}
+
+/* Show the tooltip text on hover */
+.tooltipmain:hover .tooltiptext {
+    visibility: visible;
 }
 
 /* map */
@@ -199,7 +230,17 @@ h1:focus {
 }
 
 .zoom-display {
+    margin-top: 5px;
+    color: black;
+    font-family: monospace;
+    display: flex;
+    justify-content: space-between;
+}
+
+.zoom-display-output {
     margin-top: 10px;
     color: black;
     font-family: monospace;
+    display: flex;
+    justify-content: space-between;
 }

@@ -1,14 +1,12 @@
-@page "/tilegrid"
+@page "/tilegridoutput"
 @using System.Globalization
 @using WaveFunctionCollapseWeb.Data
 @using WaveFunctionCollapseWeb.Models
 @rendermode InteractiveServer
-@inject IJSRuntime JS
 
 <div>
     <div class="wrapper"
          id="tileMap"
-         @ref="tileRef"
          @onwheel="OnWheel"
          @onmousedown="OnMouseDown"
          @onmouseup="OnMouseUp"
@@ -56,7 +54,7 @@
 
     </div>
 
-    <div class="zoom-display" style="width: @(displayWidth)vh"><span>@offsetX,@offsetY</span> <span>@Width x @Height</span></div>
+    <div class="zoom-display-output"><span>@offsetX,@offsetY</span> <span>@Width x @Height</span></div>
 </div>
 
 <script>
@@ -75,6 +73,7 @@
 @code {
     [Parameter] public int displayWidth { get; set; }
     [Parameter] public int displayHeight { get; set; }
+    [Parameter] public int size { get; set; }
     [Parameter] public double Sensitivity { get; set; }
     [Parameter] public EventCallback<double> SensitivityChanged { get; set; }
 
@@ -90,47 +89,40 @@
     string RowSize => (displayWidth / (decimal)Width)
         .ToString(CultureInfo.InvariantCulture);
 
-    int Width = 8;
-    int Height = 8;
+    int Width = 12;
+    int Height = 12;
 
     //dragging
     private bool isDragging = false;
     private Point startDrag;
     private int offsetX = 0;
     private int offsetY = 0;
-    private int tempOffsetX = 0;
-    private int tempOffsetY = 0;
     private bool isRightClick = false;
 
-    //for JS
-    private ElementReference tileRef;
 
     protected override void OnInitialized()
     {
-        if (DataManager.width != 0)
+        if (DataManager.widthOutput != 0)
         {
-            Width = DataManager.width;
-            Height = DataManager.height;
+            Width = DataManager.widthOutput;
+            Height = DataManager.heightOutput;
         }
 
-        offsetX = DataManager.offsetX;
-        offsetY = DataManager.offsetY;
-        if (DataManager.viewTiles.Count >= 1)
+        offsetX = DataManager.offsetXOutput;
+        offsetY = DataManager.offsetYOutput;
+        // if (DataManager.viewTiles.Count >= 1)
+        // {
+        //     viewTiles = DataManager.viewTiles;
+        //     return;
+        // }
+        if (blockGeneration)
         {
-            viewTiles = DataManager.viewTiles;
             return;
         }
 
-        for (int y = 0; y < Height; y++)
-        {
-            for (int x = 0; x < Width; x++)
-            {
-                //viewTiles.Add((x, y), new Tile() { Y = y, X = x, Text = "⬜" });
-                Tile insert = new Tile() { Text = $"{x},{y}", Background = "#448", ExceptionType = ExceptionType.Number, Name = $"Test - Location - {x},{y}" };
-                var id = DataManager.AddTileToDatabase(insert);
-                viewTiles.Add((x, y), id);
-            }
-        }
+        blockGeneration = true;
+        Algorithm.WFCCore.Generate();
+        viewTiles = DataManager.tiles;
     }
 
     void OnMouseDown(MouseEventArgs e)
@@ -140,9 +132,8 @@
             isRightClick = true;
         }
 
+        viewTiles = DataManager.tiles;
 
-        tempOffsetX = offsetX;
-        tempOffsetY = offsetY;
         isDragging = true;
         startDrag = new Point(e.ScreenX, e.ScreenY);
     }
@@ -154,7 +145,7 @@
     }
 
 
-    async Task OnMouseUp(MouseEventArgs e)
+    void OnMouseUp(MouseEventArgs e)
     {
         isDragging = false;
         if (isRightClick)
@@ -163,38 +154,30 @@
             return;
         }
 
-        if (tempOffsetX == offsetX && tempOffsetY == offsetY)
-        {
-            await Paint(e.ClientX, e.ClientY, DataManager.paintingTile.ID);
-        }
-
-        DataManager.offsetX = offsetX;
-        DataManager.offsetY = offsetY;
+        DataManager.offsetXOutput = offsetX;
+        DataManager.offsetYOutput = offsetY;
     }
 
-    async Task OnMouseMove(MouseEventArgs e)
+    void OnMouseMove(MouseEventArgs e)
     {
         if (isRightClick)
         {
-            await Paint(e.ClientX, e.ClientY, DataManager.paintingTile.ID);
             return;
         }
 
-        if (isDragging)
+        if (!isDragging) return;
+        double xDifference = e.ScreenX - startDrag.X;
+        double yDifference = e.ScreenY - startDrag.Y;
+        if (xDifference >= (double)displayWidth / Width * Sensitivity || xDifference <= -((double)displayWidth / Width * Sensitivity))
         {
-            double xDifference = e.ScreenX - startDrag.X;
-            double yDifference = e.ScreenY - startDrag.Y;
-            if (xDifference >= (double)displayWidth / Width * Sensitivity || xDifference <= -((double)displayWidth / Width * Sensitivity))
-            {
-                startDrag.X = e.ScreenX;
-                offsetX += 1 * (-Math.Sign(xDifference));
-            }
+            startDrag.X = e.ScreenX;
+            offsetX += 1 * (-Math.Sign(xDifference));
+        }
 
-            if (yDifference >= (double)displayHeight / Height * Sensitivity || yDifference <= -((double)displayHeight / Height * Sensitivity))
-            {
-                startDrag.Y = e.ScreenY;
-                offsetY += 1 * (-Math.Sign(yDifference));
-            }
+        if (yDifference >= (double)displayHeight / Height * Sensitivity || yDifference <= -((double)displayHeight / Height * Sensitivity))
+        {
+            startDrag.Y = e.ScreenY;
+            offsetY += 1 * (-Math.Sign(yDifference));
         }
     }
 
@@ -215,25 +198,9 @@
             Height--;
         }
 
-        DataManager.width = Width;
-        DataManager.height = Height;
-        DataManager.viewTiles = viewTiles;
-    }
-
-    async Task Paint(double clientX, double clientY, Guid paintId)
-    {
-        double viewportHeightPx = await JS.InvokeAsync<double>("getViewportHeight");
-        var pos = await JS.InvokeAsync<Point>("getRelativePos", tileRef, clientX, clientY);
-        double tileSizePx = displayHeight / (double)Height * (viewportHeightPx / 100.0);
-        int x = (int)Math.Floor(pos.X / tileSizePx + offsetX);
-        int y = (int)Math.Floor(pos.Y / tileSizePx + offsetY);
-        if (!viewTiles.TryAdd((x, y), paintId))
-        {
-            viewTiles[(x, y)] = paintId;
-        }
-
-        //for persistent
-        DataManager.viewTiles = viewTiles;
+        DataManager.widthOutput = Width;
+        DataManager.heightOutput = Height;
+        //DataManager.viewTiles = viewTiles;
     }
 
 }
