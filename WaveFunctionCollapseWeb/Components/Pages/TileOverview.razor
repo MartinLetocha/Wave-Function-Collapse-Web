@@ -3,6 +3,7 @@
 @using WaveFunctionCollapseWeb.Models
 @using WaveFunctionCollapseWeb.Components.Display
 @rendermode InteractiveServer
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
 
 <h3 class="center-text">Tile Overview</h3>
 
@@ -10,16 +11,21 @@
     <div class="border-small add-tile">
         <div class="center-text">Add tile</div>
         <div>Name: <input type="text" @oninput="args => tileName = args.Value.ToString()"/></div>
-        <div>Background color:</div> <ColorPicker InColor="@backgroundColor" ReturnedColor="color => { ColorChange(color, false);}"></ColorPicker>
+        <div>Background color:</div>
+        <ColorPicker InColor="@backgroundColor" ReturnedColor="color => { ColorChange(color, false);}"></ColorPicker>
         <div>Foreground text: <input type="text" @oninput="args => foregroundText = args.Value.ToString()"/></div>
-        <div>Foreground color:</div> <ColorPicker InColor="@foregroundColor" ReturnedColor="color => { ColorChange(color, true);}"></ColorPicker>
+        <div>Foreground color:</div>
+        <ColorPicker InColor="@foregroundColor" ReturnedColor="color => { ColorChange(color, true);}"></ColorPicker>
         <div>
-            Image: <InputFile OnChange="FileSelected"></InputFile>
+            Image:
+            <InputFile OnChange="FileSelected"></InputFile>
         </div>
-        <div>Preview: 
+        <div>Category: <input type="text" @oninput="args => categoryName = args.Value.ToString()"/></div>
+        <div>Preview:
             @if (imageBytes == null)
             {
-                <div class="cell" style="background: @backgroundColor; width: 2rem; height: 2rem; color: @foregroundColor">@(foregroundText)</div>
+                <div class="cell"
+                     style="background: @backgroundColor; width: 2rem; height: 2rem; color: @foregroundColor">@(foregroundText)</div>
             }
             else
             {
@@ -34,12 +40,21 @@
             showNumberOnce = false;
         }
         <div class="center-text">All tiles</div>
-        @foreach (var kvp in DataManager.tileDatabase)
+        @foreach (var kvp in DataManager.tileDatabase.ToList().OrderBy(x => x.Value.Category))
         {
             Tile tile = kvp.Value;
-            if (kvp.Value.ExceptionType == ExceptionType.Number && showNumberOnce)
+            if (tile.Category != lastCategory)
+            {
+                <div>
+                    <div>@tile.Category</div>
+                    <div class="bi material-symbols-outlined" aria-hidden="true">arrow_drop_down</div>
+                </div>
+                lastCategory = tile.Category;
+            }
+
+            if (tile.ExceptionType == ExceptionType.Number && showNumberOnce)
                 continue;
-            if (kvp.Value.ExceptionType == ExceptionType.Number)
+            if (tile.ExceptionType == ExceptionType.Number)
             {
                 showNumberOnce = true;
                 <div class="tile-whole @(activeTileId == kvp.Key ? "active-tile" : "")"
@@ -55,7 +70,15 @@
                 <div class="tile-whole @(activeTileId == kvp.Key ? "active-tile" : "")"
                      @onclick="args => MouseClickTile(args, kvp.Key)">
                     @tile.Name
-                    <div class="cell" style="background: @tile.Background; width: 2rem; height: 2rem; color:@tile.TextColor">@(tile.Text)</div>
+                    <div class="cell"
+                         style="background: @tile.Background; width: 2rem; height: 2rem; color:@tile.TextColor">@(tile.Text)</div>
+                    <button @onclick="() => {AssignPaintingTile(kvp.Key); }"><div class="bi material-symbols-outlined" aria-hidden="true">brush</div></button>
+                    <button @onclick="() => { DataManager.SetPalette(0, kvp.Key);}"><div>1</div></button>
+                    <button @onclick="() => { DataManager.SetPalette(1, kvp.Key);}"><div>2</div></button>
+                    <button @onclick="() => { DataManager.SetPalette(2, kvp.Key);}"><div>3</div></button>
+                    <button @onclick="() => { DataManager.SetPalette(3, kvp.Key);}"><div>4</div></button>
+                    <button @onclick="() => { DataManager.SetPalette(4, kvp.Key);}"><div>5</div></button>
+                    <button><div class="bi material-symbols-outlined" aria-hidden="true">delete</div></button>
                 </div>
             }
             else
@@ -63,76 +86,147 @@
                 <div class="tile-whole @(activeTileId == kvp.Key ? "active-tile" : "")"
                      @onclick="args => MouseClickTile(args, kvp.Key)">
                     @tile.Name
-                    <div class="cell" style="background-image: url(@($"data:{tile.Image.DataType};base64,{Convert.ToBase64String(tile.Image.Data)}")); background-size: 2rem 2rem; width: 2rem; height: 2rem; color:@tile.TextColor">@(tile.Text)</div>
+                    <div class="cell"
+                         style="background-image: url(@($"data:{tile.Image.DataType};base64,{Convert.ToBase64String(tile.Image.Data)}")); background-size: 2rem 2rem; width: 2rem; height: 2rem; color:@tile.TextColor">@(tile.Text)</div>
+                    <button @onclick="() => {AssignPaintingTile(kvp.Key); }"><div class="bi material-symbols-outlined" aria-hidden="true">brush</div></button>
+                    <button @onclick="() => { DataManager.SetPalette(0, kvp.Key);}"><div>1</div></button>
+                    <button @onclick="() => { DataManager.SetPalette(1, kvp.Key);}"><div>2</div></button>
+                    <button @onclick="() => { DataManager.SetPalette(2, kvp.Key);}"><div>3</div></button>
+                    <button @onclick="() => { DataManager.SetPalette(3, kvp.Key);}"><div>4</div></button>
+                    <button @onclick="() => { DataManager.SetPalette(4, kvp.Key);}"><div>5</div></button>
+                    <button><div class="bi material-symbols-outlined" aria-hidden="true">delete</div></button>
                 </div>
             }
         }
     </div>
-    <div class="center-text border-small">
-        <div class="painting-tile">
-            <div class="center-text">Set painting tile</div>
-            <div class="row-paint">
-                <button @onclick="AssignPaintingTile" class="btn-tile-set">></button>
-                @DataManager.paintingTile.Name
-                @if (DataManager.paintingTile.Image.Data == null)
-                {
-                    <div class="cell"
-                         style="background: @DataManager.paintingTile.Background; width: 2rem; height: 2rem; color:@DataManager.paintingTile.TextColor">@(DataManager.paintingTile.Text)</div>
-                }
-                else
-                {
-                    <div class="cell"
-                         style="background-image: url(@($"data:{DataManager.paintingTile.Image.DataType};base64,{Convert.ToBase64String(DataManager.paintingTile.Image.Data)}")); background-size: 2rem 2rem; width: 2rem; height: 2rem; color:@DataManager.paintingTile.TextColor">@(DataManager.paintingTile.Text)</div>
-                }
-            </div>
+    <div class="border-small add-tile">
+        <div class="center-text">Edit tile</div>
+        <div>DEBUG: @activeTileId</div>
+        <div>Name: <input type="text" value="@tileNameEdit" @oninput="args => tileNameEdit = args.Value.ToString()"/></div>
+        <div>Background color:</div>
+        <ColorPicker InColor="@backgroundColorEdit" ReturnedColor="color => { ColorChange(color, false, true);}"></ColorPicker>
+        <div>Foreground text: <input type="text" value="@foregroundTextEdit" @oninput="args => foregroundTextEdit = args.Value.ToString()"/></div>
+        <div>Foreground color:</div>
+        <ColorPicker InColor="@foregroundColorEdit" ReturnedColor="color => { ColorChange(color, true, true);}"></ColorPicker>
+        <div>
+            Image:
+            <InputFile OnChange="FileSelectedEdit"></InputFile>
         </div>
+        <div>Category: <input type="text" value="@categoryNameEdit" @oninput="args => categoryNameEdit = args.Value.ToString()"/></div>
+        <div>Preview:
+            @if (imageBytesEdit == null)
+            {
+                <div class="cell"
+                     style="background: @backgroundColor; width: 2rem; height: 2rem; color: @foregroundColorEdit">@(foregroundTextEdit)</div>
+            }
+            else
+            {
+                <div class="cell"
+                     style="background-image: url(@($"data:{imageContentTypeEdit};base64,{Convert.ToBase64String(imageBytesEdit)}")); background-size: 2rem 2rem; width: 2rem; height: 2rem; color: @foregroundColorEdit">@(foregroundTextEdit)</div>
+            }
+        </div>
+        <button @onclick="() => { EditTile(activeTileId); }">Edit</button>
     </div>
 </div>
 
 @code {
+    private string lastCategory = "x3!dj";
+
     private bool showNumberOnce = false;
-    private byte[]? imageBytes = null;
-    private string? imageContentType = null;
 
     private Guid activeTileId = DataManager.selectedTileOverview;
+
     //add tile
     private string tileName = "";
     private string backgroundColor = "#445";
     private string foregroundColor = "#ffffff";
     private string foregroundText = "";
+    private string categoryName = "";
+    private byte[]? imageBytes = null;
+    private string? imageContentType = null;
+    
+    //edit tile
+    private string tileNameEdit = "";
+    private string backgroundColorEdit = "#445";
+    private string foregroundColorEdit = "#ffffff";
+    private string foregroundTextEdit = "";
+    private string categoryNameEdit = "";
+    private byte[]? imageBytesEdit = null;
+    private string? imageContentTypeEdit = null;
+    
     //TODO: TIER 3 - make JSON save and loading
     //TODO: TIER 2 - add option to use 1,2,3,4,5 as "paint brushes" -> list has a number option, show that in 'settings'
-    //TODO: TIER 1 - Change add tile to edit as well, add delete option
+    //TODO: TIER 1 - add delete option, scale font size with TileMap zoom, make buttons have tooltips or sum like that, remove painting tile, replace with first in db or something
 
-    private void AssignPaintingTile()
+    protected override void OnInitialized()
     {
-        bool success = DataManager.tileDatabase.TryGetValue(activeTileId, out var tile);
+        DataManager.Start();
+        var tile = DataManager.GetTileFromDb(activeTileId);
+        tileNameEdit = tile.Name;
+        foregroundColorEdit = tile.TextColor;
+        foregroundTextEdit = tile.Text;
+        backgroundColorEdit = tile.Background;
+        imageBytesEdit = tile.Image.Data;
+        imageContentTypeEdit = tile.Image.DataType;
+        categoryNameEdit = tile.Category;
+    }
+
+    private void AssignPaintingTile(Guid id)
+    {
+        bool success = DataManager.tileDatabase.TryGetValue(id, out var tile);
         if (success)
         {
             DataManager.paintingTile = tile;
         }
+
+        lastCategory = "x3!dj";
     }
 
-    private void ColorChange(string e, bool isFore)
+    private void ColorChange(string e, bool isFore, bool isEdit = false)
     {
-        if (isFore)
+        if (isEdit)
         {
-            foregroundColor = e;
+            if (isFore)
+            {
+                foregroundColorEdit = e;
+            }
+            else
+            {
+                backgroundColorEdit = e;
+            }
         }
         else
         {
-            backgroundColor = e;
+            if (isFore)
+            {
+                foregroundColor = e;
+            }
+            else
+            {
+                backgroundColor = e;
+            }
         }
+
+        lastCategory = "x3!dj";
     }
+
+    private void EditTile(Guid id)
+    {
+        Tile tile = new Tile() {ID = id, Name = tileNameEdit, TextColor = foregroundColorEdit, Text = foregroundTextEdit, Background = backgroundColorEdit, Category = categoryNameEdit, Image = new Image(){Data = imageBytesEdit, DataType = imageContentTypeEdit}};
+        DataManager.EditTileInDatabase(id, tile);
+    }
+    
     private void AddTile()
     {
-        Tile newTile = new Tile() {Name = tileName, Background = backgroundColor, Text = foregroundText, TextColor = foregroundColor, Image = new Image(){Data = imageBytes, DataType = imageContentType}};
+        Tile newTile = new Tile() { Name = tileName, Background = backgroundColor, Text = foregroundText, Category = categoryName, TextColor = foregroundColor, Image = new Image() { Data = imageBytes, DataType = imageContentType } };
         Guid id = DataManager.AddTileToDatabase(newTile);
         activeTileId = id;
         DataManager.selectedTileOverview = id;
         imageBytes = null;
         imageContentType = null;
+        lastCategory = "x3!dj";
     }
+
     private async Task FileSelected(InputFileChangeEventArgs e)
     {
         var file = e.File;
@@ -142,12 +236,38 @@
 
         imageBytes = ms.ToArray();
         imageContentType = file.ContentType;
+        lastCategory = "x3!dj";
+    }
+    private async Task FileSelectedEdit(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        using var ms = new MemoryStream();
+        await file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).CopyToAsync(ms);
+
+        imageBytesEdit = ms.ToArray();
+        imageContentTypeEdit = file.ContentType;
+        lastCategory = "x3!dj";
     }
 
     private void MouseClickTile(MouseEventArgs e, Guid id)
     {
+        if (id == activeTileId)
+        {
+            lastCategory = "x3!dj";
+            return;
+        }
         activeTileId = id;
         DataManager.selectedTileOverview = id;
+        var tile = DataManager.GetTileFromDb(id);
+        tileNameEdit = tile.Name;
+        foregroundColorEdit = tile.TextColor;
+        foregroundTextEdit = tile.Text;
+        backgroundColorEdit = tile.Background;
+        imageBytesEdit = tile.Image.Data;
+        imageContentTypeEdit = tile.Image.DataType;
+        categoryNameEdit = tile.Category;
+        lastCategory = "x3!dj";
     }
 
 }

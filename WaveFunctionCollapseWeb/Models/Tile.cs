@@ -9,6 +9,7 @@ public class Tile
     public string TextColor { get; set; }
     public Image Image { get; set; }
     public string Biome { get; set; }
+    public string Category { get; set; }
     public ExceptionType ExceptionType { get; set; }
 
     public Tile()

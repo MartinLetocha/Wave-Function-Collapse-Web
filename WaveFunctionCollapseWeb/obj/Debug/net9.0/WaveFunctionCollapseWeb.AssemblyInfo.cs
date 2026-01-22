@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WaveFunctionCollapseWeb")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c649cd58baacd2846e6de797d32e85be233b2648")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7fa4407e71d4401a6dcadfe454d1ef922dbf1600")]
 [assembly: System.Reflection.AssemblyProductAttribute("WaveFunctionCollapseWeb")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WaveFunctionCollapseWeb")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

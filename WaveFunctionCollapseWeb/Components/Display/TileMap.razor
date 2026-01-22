@@ -40,7 +40,7 @@
                                      style=" color: @tile.TextColor"><img src="TileImage?id=@tile.ID" loading="lazy"
                                                                           decoding="async" width="100%" height="100%"
                                                                           draggable="false"
-                                                                          ondragstart="return false;"/><span>@(tile.Text)</span>
+                                                                          ondragstart="return false;"/><span class="center-text-img">@(tile.Text)</span>
                                 </div>
                             }
                         }
@@ -107,6 +107,7 @@
 
     protected override void OnInitialized()
     {
+        DataManager.Start();
         if (DataManager.width != 0)
         {
             Width = DataManager.width;
@@ -118,18 +119,6 @@
         if (DataManager.viewTiles.Count >= 1)
         {
             viewTiles = DataManager.viewTiles;
-            return;
-        }
-
-        for (int y = 0; y < Height; y++)
-        {
-            for (int x = 0; x < Width; x++)
-            {
-                //viewTiles.Add((x, y), new Tile() { Y = y, X = x, Text = "⬜" });
-                Tile insert = new Tile() { Text = $"{x},{y}", Background = "#448", ExceptionType = ExceptionType.Number, Name = $"Test - Location - {x},{y}" };
-                var id = DataManager.AddTileToDatabase(insert);
-                viewTiles.Add((x, y), id);
-            }
         }
     }
 

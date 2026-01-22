@@ -117,6 +117,7 @@ h1:focus {
 .add-tile {
     display: flex;
     flex-direction: column;
+    height: 100%;
 }
 .tile-whole {
     display: flex;
@@ -130,13 +131,13 @@ h1:focus {
 }
 .active-tile {
     background-color: #754040;
+    color: white;
 }
 .tile-whole.active-tile {
     background-color: #754040;
 }
 .display-tiles {
     width: 30vw;
-    justify-content: center;
     display: flex;
     flex-direction: column;
     flex-wrap: wrap;
@@ -146,6 +147,7 @@ h1:focus {
 .painting-tile {
     display: flex;
     flex-direction: column;
+    height: 100%;
 }
 
 .btn-tile-set {
@@ -216,8 +218,14 @@ h1:focus {
     display: grid;
     gap: 0;
 }
-
+.center-text-img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
 .cell {
+    position: relative;
     aspect-ratio: 1/1;
     background: #445;
     /*border: 1px solid #222;*/

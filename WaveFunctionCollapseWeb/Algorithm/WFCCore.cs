@@ -1,10 +1,11 @@
 using WaveFunctionCollapseWeb.Data;
+using WaveFunctionCollapseWeb.Models;
 
 namespace WaveFunctionCollapseWeb.Algorithm;
 
 public static class WFCCore
 {
-    public static List<List<Models.Tile>> GenerateTiles(int width, int height)
+    public static List<List<Tile>> GenerateTiles(int width, int height)
     {
         return null;
     }
@@ -13,9 +14,9 @@ public static class WFCCore
     {
         if (DataManager.GetTileCount() != 0)
             return;
-        Guid greenSquare = DataManager.AddTileToDatabase(new Models.Tile() { Text = "🟩", Name = "Test - Green Square" });
-        Guid redSquare = DataManager.AddTileToDatabase(new Models.Tile() { Text = "🟥", Name = "Test - Red Square" });
-        Guid blueSquare = DataManager.AddTileToDatabase(new Models.Tile() { Text = "🟦", Name = "Test - Blue Square" });
+        Guid greenSquare = DataManager.AddTileToDatabase(new Tile() { Text = "🟩", Name = "Test - Green Square", Category = "Debug", Background = "#445", TextColor = "#fff"});
+        Guid redSquare = DataManager.AddTileToDatabase(new Tile() { Text = "🟥", Name = "Test - Red Square", Category = "Debug", Background = "#445", TextColor = "#fff" });
+        Guid blueSquare = DataManager.AddTileToDatabase(new Tile() { Text = "🟦", Name = "Test - Blue Square", Category = "Debug", Background = "#445", TextColor = "#fff"});
         for (int y = -50; y < 50; y++)
         {
             for (int x = -50; x < 50; x++)
