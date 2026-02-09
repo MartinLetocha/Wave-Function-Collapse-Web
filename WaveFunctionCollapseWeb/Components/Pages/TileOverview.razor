@@ -117,7 +117,7 @@
             @if (imageBytesEdit == null)
             {
                 <div class="cell"
-                     style="background: @backgroundColor; width: 2rem; height: 2rem; color: @foregroundColorEdit">@(foregroundTextEdit)</div>
+                     style="background: @backgroundColorEdit; width: 2rem; height: 2rem; color: @foregroundColorEdit">@(foregroundTextEdit)</div>
             }
             else
             {
@@ -155,8 +155,9 @@
     private string? imageContentTypeEdit = null;
     
     //TODO: TIER 3 - make JSON save and loading
-    //TODO: TIER 2 - add option to use 1,2,3,4,5 as "paint brushes" -> list has a number option, show that in 'settings'
-    //TODO: TIER 1 - add delete option, scale font size with TileMap zoom, make buttons have tooltips or sum like that, remove painting tile, replace with first in db or something
+    //TODO: TIER 2 - fix how this thing looks
+    //TODO: TIER 1 - add delete option, make buttons have tooltips or sum like that, remove painting tile, replace with first in db or something,
+    //TODO: make category a dropdown
 
     protected override void OnInitialized()
     {

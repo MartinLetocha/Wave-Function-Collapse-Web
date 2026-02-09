@@ -32,12 +32,12 @@
                             if (tile.Image.Data == null)
                             {
                                 <div class="cell"
-                                     style="background: @tile.Background; color: @tile.TextColor">@(tile.Text)</div>
+                                     style="background: @tile.Background; color: @tile.TextColor; font-size: @(FontSize)vh">@(tile.Text)</div>
                             }
                             else
                             {
                                 <div class="cell"
-                                     style=" color: @tile.TextColor"><img src="TileImage?id=@tile.ID" loading="lazy"
+                                     style=" color: @tile.TextColor; font-size: @(FontSize)vh"><img src="TileImage?id=@tile.ID" loading="lazy"
                                                                           decoding="async" width="100%" height="100%"
                                                                           draggable="false"
                                                                           ondragstart="return false;"/><span class="center-text-img">@(tile.Text)</span>
@@ -46,7 +46,7 @@
                         }
                         else
                         {
-                            <div class="cell">?</div>
+                            <div class="cell" style="font-size: @(FontSize)vh">?</div>
                         }
                     }
                 }
@@ -88,6 +88,9 @@
         .ToString(CultureInfo.InvariantCulture);
 
     string RowSize => (displayWidth / (decimal)Width)
+        .ToString(CultureInfo.InvariantCulture);
+    
+    string FontSize => (displayWidth / (decimal)Width / 3)
         .ToString(CultureInfo.InvariantCulture);
 
     int Width = 8;
