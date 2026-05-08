@@ -1,23 +1,24 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.Mvc
+@using WaveFunctionCollapseWeb.Algorithm
 @using WaveFunctionCollapseWeb.Components.Display
 @using WaveFunctionCollapseWeb.Data
 @rendermode InteractiveServer
 <PageTitle>Wave function collapse</PageTitle>
 
-<div class="home">
+<div class="home font-equalizer">
     <div>
-        <TileMap displayWidth="50" displayHeight="50" @bind-Sensitivity="sensitivity"></TileMap>
-        <div style="width: 50vh">
-            <div class="templates setting">Templates:
-                <select class="">
+        <TileMap displayWidth="50" displayHeight="50"></TileMap>
+        <div style="width: 50vh; display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.6rem">
+            <div class="templates setting"><span class="tooltipmain">Templates:<div class="tooltiptext">This picks some pre-generated inputs as input.</div></span>
+                <select class="" value=@DataManager.settings[2] @onchange="args => { DataManager.InvokeSettingsChangeEvent(2, args.Value);}">
                     <option>None</option>
                     <option>City</option>
                     <option>Forest</option>
                     <option>Plains</option>
                 </select>
             </div>
-            <div class="palette setting">Palette:
+            <div class="palette setting"><span class="tooltipmain">Palette:<div class="tooltiptext">Click the square to make that the painting tile, you can set this in the Overview page.</div></span>
                 @for (var index = 0; index < DataManager.tilePalette.Length; index++)
                 {
                     var id = DataManager.tilePalette[index];
@@ -43,53 +44,54 @@
                     }
                 }
             </div>
-            <div class="setting">Use Input:
-                <span>
-                <input class="" type="checkbox" checked>
-                <span class="tooltipmain">(?)
-                    <div class="tooltiptext">This decides whether to use input or not.</div></span></span>
+            <div class="setting"><span class="tooltipmain">Use Input:<div class="tooltiptext">This decides whether to use input or not.</div></span>
+                <input class="better-checkbox" type="checkbox" checked value=@DataManager.settings[3] @onchange="args => { DataManager.InvokeSettingsChangeEvent(3, args.Value);}">
             </div>
-            <div class="setting">Biomes: <span><input class="" type="checkbox">
-                <span class="tooltipmain">(?)
-                    <div class="tooltiptext">This enables generation according to 'biomes'.</div></span></span>
+            <div class="setting"><span class="tooltipmain">Biomes:<div class="tooltiptext">This enables generation according to 'biomes'.</div></span><input
+                                                                                                                                                          class="better-checkbox" type="checkbox" value=@DataManager.settings[4] @onchange="args => { DataManager.InvokeSettingsChangeEvent(4, args.Value);}">
             </div>
-            <div class="setting">Tile instructions:
-                <input type="radio" class="" name="instruct" id="instruct1" autocomplete="off" checked>
-                <label class="" for="instruct1">Directional algorithm</label>
-                <input type="radio" class="" name="instruct" id="instruct2" autocomplete="off">
-                <label class="" for="instruct2">Tile by tile</label>
-                <input type="radio" class="" name="instruct" id="instruct3" autocomplete="off">
-                <label class="" for="instruct3">Weight</label>
-            </div>
-            <div class="setting">Collapse:
-                <input type="radio" class="" name="collapse" id="collapse1" autocomplete="off" checked>
-                <label class="" for="collapse1">Random collapse</label>
-                <input type="radio" class="" name="collapse" id="collapse2" autocomplete="off">
-                <label class="" for="collapse2">Sequential collapse</label>
-                <input type="radio" class="" name="collapse" id="collapse3" autocomplete="off">
-                <label class="" for="collapse3">Lowest entropy</label>
-            </div>
-            <div class="setting">Tile limit at once: <span><input type="number" @bind="tileLimit" step="1"/> <span class="tooltipmain">(?)
-                    <div class="tooltiptext">This says how big is the maximum zoom out -> how many tiles can be shown at once.</div></span></span>
+            <div class="setting"><span class="tooltipmain">Tile instructions:<div class="tooltiptext">This picks how the algorithm treats tile instructions.<br/>Directional -> Each tile takes in the information based off of the locations of other tiles to it.<br/>Tile by tile -> Each tile has information on what tiles can be next to it.<br/>Weight -> Each tile has chances of a tile appearing next to it.</div>
+                </span>
+                <select class="" value=@DataManager.settings[5] @onchange="args => { DataManager.InvokeSettingsChangeEvent(5, args.Value); }">
+                    <option>Tile by tile</option>
+                    <option>Directional</option>
+                    <option>Weight</option>
+                </select></div>
+            <div class="setting"><span class="tooltipmain">Collapse:<div class="tooltiptext">This chooses how the collapse happens.<br/>Random -> It gets chosen by random.<br/>Sequential -> It gets chosen row by row.<br/>Entropy -> The lowest entropy gets collapsed, if there's multiple of the same, it picks randomly.</div>
+                </span>
+                <select class="" value=@DataManager.settings[6] @onchange="args => { DataManager.InvokeSettingsChangeEvent(6, args.Value); }">
+                    <option>Entropy</option>
+                    <option>Random</option>
+                    <option>Sequential</option>
+                </select>
             </div>
             <div class="setting">
-                Drag sensitivity: <span><input type="number" @bind="sensitivity" step=".1"/> <span class="tooltipmain">(?)
-                    <div class="tooltiptext">This makes the drag sensitivity different.</div></span></span>
-            </div>
-            <div class="setting">
-                Generation speed: <span>Max <input type="checkbox" checked
-                                              id="checkbox_speed"/>
-                <input disabled id="input_speed" type="number" max="400" min="1" value="10" step="1">
-                <span class="tooltipmain">(?)
+                <span class="tooltipmain">Generation speed:
                     <div class="tooltiptext">Handles how fast the map generates, the speed is in tiles per second.</div>
-                </span></span>
+                </span>
+                <span style="gap: 0.6rem;display: flex;align-items: center;">Max 
+                    <input type="checkbox" checked id="checkbox_speed" class=better-checkbox value=@DataManager.settings[7] @onchange="args => { DataManager.InvokeSettingsChangeEvent(7, args.Value); }">
+                    <input disabled id="input_speed" type="number" max="400" min="1" value=@DataManager.settings[8] @onchange="args => { DataManager.InvokeSettingsChangeEvent(8, args.Value); }" step="1"
+                           style="text-align: right"/>
+                </span>
             </div>
-            <div>
-                <div class="tooltipmain"><button class="">Regenerate</button><div class="tooltiptext">This creates the map anew.</div></div>
+            <div class="setting">
+                <span class="tooltipmain">Seed:<div class="tooltiptext">The seed for the map generation.</div>
+                </span>
+                <input id="seed" type="text" style="text-align: right" value=@DataManager.settings[9] @oninput="args => { DataManager.InvokeSettingsChangeEvent(9, args.Value); }">
+            </div>
+            <div class="center-button">
+                <div class="tooltipmain">
+                    <button class="" @onclick="regenerateClick">Regenerate</button>
+                    <div class="tooltiptext">This creates the map anew.</div>
+                </div>
             </div>
         </div>
     </div>
-    <TileMapDisplay displayWidth="91" displayHeight="91" @bind-Sensitivity="sensitivity"></TileMapDisplay>
+    <div class="slider-map">
+        <TileMapDisplay displayWidth="91" displayHeight="91"></TileMapDisplay>
+        <input type="range" class="slider" min="1" max="100" value=@DataManager.settings[10] @oninput="args => { DataManager.InvokeSettingsChangeEvent(10, args.Value); }"/>
+    </div>
 </div>
 
 <script>
@@ -99,11 +101,20 @@
 </script>
 
 @code {
-    private double sensitivity = 6.4;
-    private int tileLimit = 20;
+
+    protected override void OnInitialized()
+    {
+        DataManager.Start();
+    }
+
+    private void regenerateClick()
+    {
+        WFCCore.Generate();
+    }
 
     private void paletteClick(Guid id)
     {
         DataManager.paintingTile = DataManager.GetTileFromDb(id);
     }
+
 }

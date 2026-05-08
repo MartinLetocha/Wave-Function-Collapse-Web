@@ -1,0 +1,15 @@
+@page "/Settings"
+@using WaveFunctionCollapseWeb.Data
+@rendermode InteractiveServer
+
+<div class="setting">Tile limit at once: <span><input type="number" value=@DataManager.settings[1] @onchange="args => { DataManager.InvokeSettingsChangeEvent(1,args.Value);}" step="1"/> <span class="tooltipmain">(?)
+        <div class="tooltiptext">This says how big is the maximum zoom out -> how many tiles can be shown at once. Works for both input and output.</div></span></span>
+</div>
+<div class="setting">
+    Drag sensitivity: <span><input type="number" value=@DataManager.settings[0] step=".1" @onchange="args => { DataManager.InvokeSettingsChangeEvent(0, args.Value);}"/> <span class="tooltipmain">(?)
+        <div class="tooltiptext">This makes the drag sensitivity different. Works for both input and output.</div></span></span>
+</div>
+
+@code {
+
+}

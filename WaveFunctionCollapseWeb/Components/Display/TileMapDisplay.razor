@@ -5,6 +5,7 @@
 @rendermode InteractiveServer
 
 <div>
+    <div class="zoom-display not-selectable" style="width: @(displayWidth)vh; position: absolute; z-index: 1; color: white;"><span style="margin-left: 10px;">@offsetX,@offsetY</span> <span style="margin-right: 10px;">@Width x @Height</span></div>
     <div class="wrapper"
          id="tileMap"
          @onwheel="OnWheel"
@@ -30,21 +31,22 @@
                             if (tile.Image.Data == null)
                             {
                                 <div class="cell"
-                                     style="background: @tile.Background; color: @tile.TextColor">@(tile.Text)</div>
+                                     style="background: @tile.Background; color: @tile.TextColor; font-size: @(FontSize)vh">@(tile.Text)</div>
                             }
                             else
                             {
                                 <div class="cell"
-                                     style=" color: @tile.TextColor"><img src="TileImage?id=@tile.ID" loading="lazy"
-                                                                          decoding="async" width="100%" height="100%"
-                                                                          draggable="false"
-                                                                          ondragstart="return false;"/><span class="center-text-img">@(tile.Text)</span>
+                                     style=" color: @tile.TextColor; font-size: @(FontSize)vh">
+                                    <img src="TileImage?id=@tile.ID" loading="lazy"
+                                         decoding="async" width="100%" height="100%"
+                                         draggable="false"
+                                         ondragstart="return false;"/><span class="center-text-img">@(tile.Text)</span>
                                 </div>
                             }
                         }
                         else
                         {
-                            <div class="cell">?</div>
+                            <div class="cell" style="font-size: @(FontSize)vh">?</div>
                         }
                     }
                 }
@@ -53,8 +55,6 @@
         </div>
 
     </div>
-
-    <div class="zoom-display-output"><span>@offsetX,@offsetY</span> <span>@Width x @Height</span></div>
 </div>
 
 <script>
@@ -74,8 +74,6 @@
     [Parameter] public int displayWidth { get; set; }
     [Parameter] public int displayHeight { get; set; }
     [Parameter] public int size { get; set; }
-    [Parameter] public double Sensitivity { get; set; }
-    [Parameter] public EventCallback<double> SensitivityChanged { get; set; }
 
     //what is shown
     private Dictionary<(int, int), Guid> viewTiles = new();
@@ -88,6 +86,9 @@
 
     string RowSize => (displayWidth / (decimal)Width)
         .ToString(CultureInfo.InvariantCulture);
+    
+    string FontSize => (displayWidth / (decimal)Width / 3)
+        .ToString(CultureInfo.InvariantCulture);
 
     int Width = 12;
     int Height = 12;
@@ -98,10 +99,17 @@
     private int offsetX = 0;
     private int offsetY = 0;
     private bool isRightClick = false;
+    
+    //options
+    private double Sensitivity = Convert.ToDouble(DataManager.settings[0]);
+    private int TileLimit = Convert.ToInt32(DataManager.settings[1]);
 
 
     protected override void OnInitialized()
     {
+        DataManager.OnSettingChangeDouble += DataManagerOnOnSettingChangeDouble;
+        DataManager.OnSettingChangeInt += DataManagerOnOnSettingChangeInt;
+        DataManager.OnDisplayChange += RefreshDisplay;
         if (DataManager.widthOutput != 0)
         {
             Width = DataManager.widthOutput;
@@ -121,8 +129,28 @@
         }
 
         blockGeneration = true;
-        Algorithm.WFCCore.Generate();
+        //Algorithm.WFCCore.Generate();
         viewTiles = DataManager.tiles;
+    }
+
+    private void DataManagerOnOnSettingChangeInt(int id, int value)
+    {
+        switch (id)
+        {
+            case 1:
+                TileLimit = value;
+                break;
+        }
+    }
+
+    private void DataManagerOnOnSettingChangeDouble(int id, double value)
+    {
+        switch (id)
+        {
+            case 0://sensitivity
+                Sensitivity = value;
+                break;
+        }
     }
 
     void OnMouseDown(MouseEventArgs e)
@@ -179,13 +207,21 @@
             startDrag.Y = e.ScreenY;
             offsetY += 1 * (-Math.Sign(yDifference));
         }
+
+
+    }
+
+    void RefreshDisplay()
+    {
+        viewTiles = DataManager.tiles;
+        InvokeAsync(StateHasChanged);
     }
 
     void OnWheel(WheelEventArgs e)
     {
         if (e.DeltaY > 0)
         {
-            if (Width >= 20)
+            if (Width >= TileLimit)
                 return;
             Width++;
             Height++;

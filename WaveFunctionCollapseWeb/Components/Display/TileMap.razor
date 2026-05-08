@@ -1,11 +1,13 @@
 @page "/tilegrid"
 @using System.Globalization
+@using WaveFunctionCollapseWeb.Algorithm
 @using WaveFunctionCollapseWeb.Data
 @using WaveFunctionCollapseWeb.Models
 @rendermode InteractiveServer
 @inject IJSRuntime JS
 
 <div>
+    <div class="zoom-display not-selectable" style="width: @(displayWidth)vh; position: absolute; z-index: 1; color: white;"><span style="margin-left: 10px;">@offsetX,@offsetY</span> <span style="margin-right: 10px;">@Width x @Height</span></div>
     <div class="wrapper"
          id="tileMap"
          @ref="tileRef"
@@ -37,10 +39,11 @@
                             else
                             {
                                 <div class="cell"
-                                     style=" color: @tile.TextColor; font-size: @(FontSize)vh"><img src="TileImage?id=@tile.ID" loading="lazy"
-                                                                          decoding="async" width="100%" height="100%"
-                                                                          draggable="false"
-                                                                          ondragstart="return false;"/><span class="center-text-img">@(tile.Text)</span>
+                                     style=" color: @tile.TextColor; font-size: @(FontSize)vh">
+                                    <img src="TileImage?id=@tile.ID" loading="lazy"
+                                         decoding="async" width="100%" height="100%"
+                                         draggable="false"
+                                         ondragstart="return false;"/><span class="center-text-img">@(tile.Text)</span>
                                 </div>
                             }
                         }
@@ -56,7 +59,6 @@
 
     </div>
 
-    <div class="zoom-display" style="width: @(displayWidth)vh"><span>@offsetX,@offsetY</span> <span>@Width x @Height</span></div>
 </div>
 
 <script>
@@ -75,8 +77,6 @@
 @code {
     [Parameter] public int displayWidth { get; set; }
     [Parameter] public int displayHeight { get; set; }
-    [Parameter] public double Sensitivity { get; set; }
-    [Parameter] public EventCallback<double> SensitivityChanged { get; set; }
 
     //what is shown
     private Dictionary<(int, int), Guid> viewTiles = new();
@@ -104,6 +104,10 @@
     private int tempOffsetX = 0;
     private int tempOffsetY = 0;
     private bool isRightClick = false;
+    
+    //options
+    private double Sensitivity;
+    private int TileLimit;
 
     //for JS
     private ElementReference tileRef;
@@ -111,6 +115,10 @@
     protected override void OnInitialized()
     {
         DataManager.Start();
+        Sensitivity = Convert.ToDouble(DataManager.settings[0]);
+        TileLimit = Convert.ToInt32(DataManager.settings[1]);
+        DataManager.OnSettingChangeDouble += DataManagerOnOnSettingChangeDouble;
+        DataManager.OnSettingChangeInt += DataManagerOnOnSettingChangeInt;
         if (DataManager.width != 0)
         {
             Width = DataManager.width;
@@ -138,7 +146,25 @@
         isDragging = true;
         startDrag = new Point(e.ScreenX, e.ScreenY);
     }
+    private void DataManagerOnOnSettingChangeInt(int id, int value)
+    {
+        switch (id)
+        {
+            case 1:
+                TileLimit = value;
+                break;
+        }
+    }
 
+    private void DataManagerOnOnSettingChangeDouble(int id, double value)
+    {
+        switch (id)
+        {
+            case 0://sensitivity
+                Sensitivity = value;
+                break;
+        }
+    }
     // to solve mouse out of bounds dragging continuation
     void OnMouseLeave()
     {
@@ -194,7 +220,7 @@
     {
         if (e.DeltaY > 0)
         {
-            if (Width >= 20)
+            if (Width >= TileLimit)
                 return;
             Width++;
             Height++;
@@ -210,6 +236,7 @@
         DataManager.width = Width;
         DataManager.height = Height;
         DataManager.viewTiles = viewTiles;
+        WFCCore.ChangeInputTiles(viewTiles);
     }
 
     async Task Paint(double clientX, double clientY, Guid paintId)
@@ -226,6 +253,7 @@
 
         //for persistent
         DataManager.viewTiles = viewTiles;
+        WFCCore.ChangeInputTiles(viewTiles);
     }
 
 }
