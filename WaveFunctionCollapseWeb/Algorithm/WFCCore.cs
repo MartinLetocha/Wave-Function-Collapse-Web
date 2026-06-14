@@ -19,6 +19,7 @@ public static class WFCCore
     private static Dictionary<(int, int), DisplayTile> DisplayTiles = new();
     private static HashSet<(int, int)> CollapsedTiles = new();
     private static Random random = new();
+    private static HashSet<Guid> allPossibleTiles = new();
 
     public static void ChangeInputTiles(Dictionary<(int, int), Guid> Input)
     {
@@ -32,16 +33,16 @@ public static class WFCCore
 
     private static void LoadRules()
     {
-        RuleSet = new HashSet<RuleTile>();
-        inputChanged = false;
+        if (!InputTiles.Any())
+            return;
         int smallestX = Int32.MaxValue;
         int smallestY = Int32.MaxValue;
         int biggestX = Int32.MinValue;
         int biggestY = Int32.MinValue;
-        HashSet<Guid> allTiles = new();
+        allPossibleTiles = new();
         foreach (var tile in InputTiles)
         {
-            allTiles.Add(tile.Value);
+            allPossibleTiles.Add(tile.Value);
             var kvp = tile.Key;
             if(kvp.Item1 < smallestX)
                 smallestX = kvp.Item1;
@@ -53,35 +54,35 @@ public static class WFCCore
                 biggestY = kvp.Item2;
         }
         
-        FillEntropy(allTiles);
+        FillEntropy(allPossibleTiles);
         
         if (!inputChanged)
             return;
+        inputChanged = false;
+        RuleSet = new HashSet<RuleTile>();
 
         if (Instructions == "Tile by tile")
         {
             foreach (var tile in InputTiles)
             {
                 RuleTile rule = RuleSet.FirstOrDefault(x => x.ID == tile.Value) ?? new RuleTile(tile.Value);
-                //find input bounds
-                //add neighbors
                 int x = tile.Key.Item1;
                 int y = tile.Key.Item2;
                 if (x - 1 >= smallestX)
                 {
-                    AddNormalNeighbors(x-1,y,ref rule,allTiles);
+                    AddNormalNeighbors(x-1,y,ref rule,allPossibleTiles);
                 }
                 if (x + 1 <= biggestX)
                 {
-                    AddNormalNeighbors(x+1,y,ref rule,allTiles);
+                    AddNormalNeighbors(x+1,y,ref rule,allPossibleTiles);
                 }
                 if (y - 1 >= smallestY)
                 {
-                    AddNormalNeighbors(x,y-1,ref rule,allTiles);
+                    AddNormalNeighbors(x,y-1,ref rule,allPossibleTiles);
                 }
                 if (y + 1 <= biggestY)
                 {
-                    AddNormalNeighbors(x,y+1,ref rule,allTiles);
+                    AddNormalNeighbors(x,y+1,ref rule,allPossibleTiles);
                 }
                 RuleSet.Add(rule);
             }
@@ -94,22 +95,111 @@ public static class WFCCore
         {
             rule.AllowedNeighbors.Add(guid);
         }
-        else
-        {
-            rule.AllowedNeighbors = allTiles;
-        }
     }
     private static void FillEntropy(HashSet<Guid> allPossibilities)
     {
         int temp = 20;
-        var display = new DisplayTile() { Entropy = allPossibilities };
         DisplayTiles = new();
         for (int i = 0; i < temp; i++)
         {
             for (int j = 0; j < temp; j++)
             {
+                var display = new DisplayTile()
+                {
+                    Entropy = new HashSet<Guid>(allPossibilities)
+                };
                 DisplayTiles.Add((i,j), display);
             }
+        }
+    }
+
+    private static void HandleQueueAddition(bool isSuccess, (int X, int Y) location, DisplayTile tile, ref HashSet<Guid> centerEntropy, ref Queue<QueueTile> queue, ref HashSet<(int, int)> tried, Dictionary<(int, int), DisplayTile> main)
+    {
+        if (isSuccess && !tried.Contains(location))
+        {
+            HashSet<Guid> finished = null;
+            foreach (var entropyGuid in centerEntropy)
+            {
+                if (finished == null)
+                {
+                    finished = new HashSet<Guid>(RuleSet.ToList().First(x=>x.ID == entropyGuid).AllowedNeighbors);
+                }
+                else
+                {
+                    finished.UnionWith(RuleSet.ToList().First(x=>x.ID == entropyGuid).AllowedNeighbors);
+                    //finished.IntersectWith(RuleSet.ToList().First(x=>x.ID == entropyGuid).AllowedNeighbors);
+                }
+            }
+            
+            (int X,int Y) leftLoc = (location.X - 1, location.Y);
+            (int X,int Y) rightLoc = (location.X + 1, location.Y);
+            (int X,int Y) topLoc = (location.X, location.Y + 1);
+            (int X,int Y) downLoc = (location.X, location.Y - 1);
+            bool isLeftSuccess = main.TryGetValue(leftLoc, out var leftTile);
+            bool isRightSuccess = main.TryGetValue(rightLoc, out var rightTile);
+            bool isTopSuccess = main.TryGetValue(topLoc, out var topTile);
+            bool isDownSuccess = main.TryGetValue(downLoc, out var downTile);
+            
+            //intersect finished with all four neighbors
+
+            if (isLeftSuccess)
+            {
+                HashSet<Guid> mini = new HashSet<Guid>();
+                foreach (var entropy in leftTile.Entropy)
+                {
+                    mini.UnionWith(RuleSet.ToList().First(x=>x.ID == entropy).AllowedNeighbors);
+                }
+                finished.IntersectWith(mini);
+            }
+
+            if (isRightSuccess)
+            {
+                HashSet<Guid> mini = new HashSet<Guid>();
+                foreach (var entropy in rightTile.Entropy)
+                {
+                    mini.UnionWith(RuleSet.ToList().First(x=>x.ID == entropy).AllowedNeighbors);
+                }
+                finished.IntersectWith(mini);
+            }
+
+            if (isTopSuccess)
+            {
+                HashSet<Guid> mini = new HashSet<Guid>();
+                foreach (var entropy in topTile.Entropy)
+                {
+                    mini.UnionWith(RuleSet.ToList().First(x=>x.ID == entropy).AllowedNeighbors);
+                }
+                finished.IntersectWith(mini);
+            }
+
+            if (isDownSuccess)
+            {
+                HashSet<Guid> mini = new HashSet<Guid>();
+                foreach (var entropy in downTile.Entropy)
+                {
+                    mini.UnionWith(RuleSet.ToList().First(x=>x.ID == entropy).AllowedNeighbors);
+                }
+                finished.IntersectWith(mini);
+            }
+
+            if (!finished.SetEquals(tile.Entropy) && finished.Count != 0)
+            {
+                //OR tile.Entropy = new HashSet<Guid>(finished);
+                tile.Entropy.IntersectWith(finished);
+                main[(location.X, location.Y)] = tile;
+                
+                
+                if(isLeftSuccess)
+                    queue.Enqueue(new QueueTile(){X = leftLoc.X, Y = leftLoc.Y, Tile = leftTile});
+                if(isRightSuccess)
+                    queue.Enqueue(new QueueTile(){X = rightLoc.X, Y = rightLoc.Y, Tile = rightTile});
+                if(isTopSuccess)
+                    queue.Enqueue(new QueueTile(){X = topLoc.X, Y = topLoc.Y, Tile = topTile});
+                if(isDownSuccess)
+                    queue.Enqueue(new QueueTile(){X = downLoc.X, Y = downLoc.Y, Tile = downTile});
+            }
+
+            tried.Add(location);
         }
     }
 
@@ -126,42 +216,13 @@ public static class WFCCore
         bool isRightSuccess = main.TryGetValue(rightLoc, out var rightTile);
         bool isTopSuccess = main.TryGetValue(topLoc, out var topTile);
         bool isDownSuccess = main.TryGetValue(downLoc, out var downTile);
-        HashSet<Guid> allPossible = new();
-        if (isLeftSuccess && !tried.Contains(leftLoc))
-        {
-            allPossible.UnionWith(leftTile.Entropy);
-            queue.Enqueue(new QueueTile(){X = leftLoc.X, Y = leftLoc.Y, Tile = leftTile});
-            tried.Add(leftLoc);
-        }
-        if (isRightSuccess && !tried.Contains(rightLoc))
-        {
-            allPossible.UnionWith(rightTile.Entropy);
-            queue.Enqueue(new QueueTile(){X = rightLoc.X, Y = rightLoc.Y, Tile = rightTile});
-            tried.Add(rightLoc);
-        }
-        if (isTopSuccess && !tried.Contains(topLoc))
-        {
-            allPossible.UnionWith(topTile.Entropy);
-            queue.Enqueue(new QueueTile(){X = topLoc.X, Y = topLoc.Y, Tile = topTile});
-            tried.Add(topLoc);
-        }
-        if (isDownSuccess && !tried.Contains(downLoc))
-        {
-            allPossible.UnionWith(downTile.Entropy);
-            queue.Enqueue(new QueueTile(){X = downLoc.X, Y = downLoc.Y, Tile = downTile});
-            tried.Add(downLoc);
-        }
-
-        if (!isFirst)
-        {
-            if (allPossible.Count != 0)
-            {
-                var old = main[(readied.X, readied.Y)];
-                old.Entropy = allPossible;
-                main[(readied.X, readied.Y)] = old;
-            }
-        }
-
+        HashSet<Guid> centerEntropy = new HashSet<Guid>(readied.Tile.Entropy);
+        
+        HandleQueueAddition(isLeftSuccess, leftLoc, leftTile, ref centerEntropy, ref queue, ref tried, main);
+        HandleQueueAddition(isRightSuccess, rightLoc, rightTile, ref centerEntropy, ref queue, ref tried, main);
+        HandleQueueAddition(isTopSuccess, topLoc, topTile, ref centerEntropy, ref queue, ref tried, main);
+        HandleQueueAddition(isDownSuccess, downLoc, downTile, ref centerEntropy, ref queue, ref tried, main);
+        
         UpdateCollapsedTiles(ref queue, ref main, ref tried);
     }
     
@@ -175,8 +236,24 @@ public static class WFCCore
         while(CollapsedTiles.Count < 20 * 20) //CHANGE THIS TO BE DYNAMIC
         {
             var display = DisplayTiles.Where(x=>!x.Value.Collapsed).OrderBy(x => x.Value.Entropy.Count()).ToList();
-            //if they all have the same entropy, then don't pick randomly
-            KeyValuePair<(int, int), DisplayTile> chosen = display[random.Next(0, display.Count)];
+            bool success = false;
+            KeyValuePair<(int, int), DisplayTile> chosen = display.First();
+            int entropyCount = chosen.Value.Entropy.Count();
+
+            foreach (var keyValuePair in display)
+            {
+                if (entropyCount != keyValuePair.Value.Entropy.Count())
+                {
+                    success = true;
+                    break;
+                }
+            }
+
+            if (!success)
+            {
+                chosen = display[random.Next(0, display.Count)];
+            }
+            
             
             while (CollapsedTiles.Contains(chosen.Key))
             {
@@ -188,39 +265,11 @@ public static class WFCCore
             CollapsedTiles.Add(chosen.Key);
             var fullTile = new DisplayTile() { Entropy = new HashSet<Guid>() { collapsed }, Collapsed = true };
             DisplayTiles[chosen.Key] = fullTile;
-            //walk through displayTiles, update according to collapsed
-            //queue up all neighbors of collapsed tiles and remove their entropy, when removing entropy check those neighbors too, go through queue by the recency of being added
             
             Queue<QueueTile> queue = new();
             HashSet<(int, int)> triedOnes = new();
             queue.Enqueue(new QueueTile() {X = chosen.Key.Item1, Y = chosen.Key.Item2, Tile = fullTile});
             UpdateCollapsedTiles(ref queue, ref DisplayTiles, ref triedOnes, true);
         }
-
-        // if (DataManager.GetTileCount() != 0)
-        //     return;
-        // Guid greenSquare = DataManager.AddTileToDatabase(new Tile() { Text = "🟩", Name = "Test - Green Square", Category = "Debug", Background = "#445", TextColor = "#fff"});
-        // Guid redSquare = DataManager.AddTileToDatabase(new Tile() { Text = "🟥", Name = "Test - Red Square", Category = "Debug", Background = "#445", TextColor = "#fff" });
-        // Guid blueSquare = DataManager.AddTileToDatabase(new Tile() { Text = "🟦", Name = "Test - Blue Square", Category = "Debug", Background = "#445", TextColor = "#fff"});
-        // for (int y = -50; y < 50; y++)
-        // {
-        //     for (int x = -50; x < 50; x++)
-        //     {
-        //         // DataManager.tiles.TryAdd((x, y), new Models.Tile() { X = x, Y = y, Text = $"{x},{y}"});
-        //         if (x == 19 || y == 19 || x == 0 || y == 0)
-        //         {
-        //             DataManager.AddTile((x, y), greenSquare);
-        //         }
-        //         else if (x % 2 == 0)
-        //         {
-        //             DataManager.AddTile((x, y), redSquare);
-        //         }
-        //         else
-        //         {
-        //             DataManager.AddTile((x, y), blueSquare);
-        //         }
-        //     }
-        // }
     }
-    
 }
