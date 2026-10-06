@@ -26,6 +26,11 @@ public static class WFCCore
         InputTiles = Input;
         inputChanged = true;
     }
+
+    public static void CheckOutputChange(int x, int y, int width, int height)
+    {
+        
+    }
     public static List<List<Tile>> GenerateTiles(int width, int height)
     {
         return null;

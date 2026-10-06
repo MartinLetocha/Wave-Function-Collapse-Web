@@ -1,5 +1,6 @@
 @page "/tilegridoutput"
 @using System.Globalization
+@using WaveFunctionCollapseWeb.Algorithm
 @using WaveFunctionCollapseWeb.Data
 @using WaveFunctionCollapseWeb.Models
 @rendermode InteractiveServer
@@ -208,7 +209,7 @@
             offsetY += 1 * (-Math.Sign(yDifference));
         }
 
-
+        WFCCore.CheckOutputChange(offsetX, offsetY, Width, Height);
     }
 
     void RefreshDisplay()
